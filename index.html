@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+  <!-- MDB -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.3.0/mdb.min.css" rel="stylesheet" />
+
+  <!-- Google Charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <style>
+    body {
+      background: #f5f7fa;
+      font-family: "Roboto", sans-serif;
+    }
+
+    h4,
+    h5 {
+      font-weight: 500;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    .chart-card {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s;
+    }
+
+    .chart-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .chart-card .card-header {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      padding: 1rem 1.5rem;
+    }
+
+    .chart-wrapper {
+      width: 100%;
+      height: 100%;
+      padding: 1rem;
+    }
+
+    .chart-container {
+      width: 100%;
+      height: 420px;
+    }
+
+    /* Ajuste para os maiores */
+    .chart-container-lg {
+      height: 500px;
+    }
+
+    .chart-container-xl {
+      height: 600px;
+    }
+
+    .link-doc {
+      font-size: 0.9rem;
+    }
+  </style>
+
+  <script>
+    google.charts.load('current', {
+      packages: ['calendar','corechart','line','bar'],
+      mapsApiKey: 'YOUR_API_KEY_HERE'
+    });
+
+    google.charts.setOnLoadCallback(getDataColumn);
+    google.charts.setOnLoadCallback(getDataCircle);
+    google.charts.setOnLoadCallback(getDataLine);
+    google.charts.setOnLoadCallback(getDataKPI);
+    google.charts.setOnLoadCallback(getDataBubble);
+
+    function getDataColumn() { google.script.run.withSuccessHandler(drawColumn).getDadosAno(); }
+    function getDataCircle() { google.script.run.withSuccessHandler(drawCircle).getDadosCircle(); }
+    function getDataLine()   { google.script.run.withSuccessHandler(drawLine).getDadosLine(); }
+    function getDataKPI()    { google.script.run.withSuccessHandler(drawKPI).getDadosCRMedio(); }
+    function getDataBubble() { google.script.run.withSuccessHandler(drawBubble).getAprovacao(); }
+
+    /* ===== SUA LÓGICA ORIGINAL ↓↓↓ (inalterada) ===== */
+    function drawBubble(getAprovacao) {
+      const raw = getAprovacao;
+      const chartData = [['ID', 'X', 'Y', 'Group', 'Size']];
+      let max_alunos = 0;
+
+      for (let i = 1; i < raw.length; i++) {
+        const nome = raw[i][0];
+        const porcentagem = Number(raw[i][1]);
+        const alunos = Number(raw[i][2]);
+        if (max_alunos < alunos) max_alunos = alunos;
+        chartData.push([nome, porcentagem, alunos, nome, porcentagem]);
+      }
+
+      const data = google.visualization.arrayToDataTable(chartData);
+      const options = {
+        width: "100%",
+        height: "100%",
+        title: 'Porcentagem de Aprovação por Disciplina',
+        hAxis: { title: 'Porcentagem de Aprovação', viewWindow: { min: 0, max: 1 }},
+        vAxis: { title: 'Quantidade de Alunos', viewWindow: { min: 0, max: max_alunos + 5 }},
+        bubble: { textStyle: { fontSize: 0 }, opacity: 0.55 }
+      };
+
+      const chart = new google.visualization.BubbleChart(
+        document.getElementById('chart_div_bubble')
+      );
+
+      chart.draw(data, options);
+    }
+
+    function drawKPI(getDadosCRMedio) {
+      const data = google.visualization.arrayToDataTable(getDadosCRMedio);
+      const options = {
+        title: 'CR Médio',
+        width: "100%",
+        height: 150,
+        legend: "none",
+        chartArea: { left: 80, top: 20, width: "70%", height: "60%" },
+        hAxis: { minValue: 0, maxValue: 10, title: 'CR' }
+      };
+      new google.visualization.BarChart(document.getElementById("cr_medio_div")).draw(data, options);
+    }
+
+    function drawCircle(getDadosCircle) {
+      const data = google.visualization.arrayToDataTable(getDadosCircle);
+      const options = {
+        title: 'Status Matrícula',
+        height: 200,
+        pieHole: 0,
+        legend: { position: 'right' },
+        tooltip: { text: 'percentage' },
+        chartArea: { left: 80, top: 40, width: '70%', height: '75%' }
+      };
+      new google.visualization.PieChart(document.getElementById("pie_div")).draw(data, options);
+    }
+
+    function drawLine(getDadosLine) {
+      const data = google.visualization.arrayToDataTable(getDadosLine);
+      const options = {
+        title: 'Vagas Oferecidas x Ocupadas por Matéria',
+        height: 500,
+        legend: { position: 'top' },
+        hAxis: { title: 'Disciplinas', slantedText: true, slantedTextAngle: 45 },
+        chartArea: { left: 80, right: 20, top: 50, bottom: 120 },
+        animation: { startup: true, duration: 2000, easing: "in" }
+      };
+      new google.visualization.LineChart(document.getElementById("chart_div3")).draw(data, options);
+    }
+
+    function drawColumn(getDadosAno) {
+      const data = google.visualization.arrayToDataTable(getDadosAno);
+      const options = {
+        title: 'Ano de Nascimento: Alunos',
+        height: 400,
+        legend: { position: 'top' },
+        hAxis: { title: 'Ano', slantedText: true, slantedTextAngle: 45 },
+        vAxis: { title: 'Quantidade' },
+        chartArea: { left: 80, right: 20, top: 50, bottom: 120 },
+        bar: { groupWidth: "55%" },
+        animation: { startup: true, duration: 2000, easing: "in" }
+      };
+      new google.visualization.ColumnChart(
+        document.getElementById("chart_div_column")
+      ).draw(data, options);
+    }
+  </script>
+</head>
+
+<body>
+
+  <div class="dashboard-container">
+  <h4 class="text-center mb-5"><strong>Google Charts Dashboard</strong></h4>
+
+  <div class="row g-4">
+
+    <!-- ESQUERDA: Status Matrículas (menor, igual CR Mecio) -->
+    <div class="col-lg-6">
+      <div class="card chart-card mb-4">
+        <div class="card-header">
+          <h5>Status das Matrículas</h5>
+        </div>
+        <div class="chart-wrapper">
+          <div id="pie_div" class="chart-container" style="height:200px;"></div>
+        </div>
+        <div class="card-body text-center">
+          <a class="link-doc" href="https://developers.google.com/chart/interactive/docs/gallery/piechart"
+            target="_blank">
+            Pie Chart Docs
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIREITA: CR Médio -->
+    <div class="col-lg-6">
+      <div class="card chart-card mb-4">
+        <div class="card-header">
+          <h5>CR Médio (KPI)</h5>
+        </div>
+        <div class="chart-wrapper">
+          <div id="cr_medio_div" class="chart-container" style="height:200px;"></div>
+        </div>
+        <div class="card-body text-center">
+          <a class="link-doc" href="https://developers.google.com/chart/interactive/docs/gallery/barchart"
+            target="_blank">
+            Bar Chart Docs
+          </a>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- COLUNA ESQUERDA COMPLETA: Column -->
+    <div class="col-lg-6">
+
+      <!-- COLUMN CHART (menor) -->
+      <div class="card chart-card mb-4">
+        <div class="card-header">
+          <h5>Column Chart</h5>
+        </div>
+        <div class="chart-wrapper">
+          <div id="chart_div_column" style="width:100%; height:380px;"></div>
+        </div>
+        <div class="card-body text-center">
+          <a class="link-doc" href="https://developers.google.com/chart/interactive/docs/gallery/columnchart"
+            target="_blank">
+            Column Docs
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA COMPLETA: Bubble -->
+    <div class="col-lg-6">
+
+      <!-- BUBBLE CHART (menor) -->
+      <div class="card chart-card mb-4">
+        <div class="card-header">
+          <h5>Bubble Chart</h5>
+        </div>
+        <div class="chart-wrapper">
+          <div id="chart_div_bubble" style="width:100%; height:380px;"></div>
+        </div>
+        <div class="card-body text-center">
+          <a class="link-doc" href="https://developers.google.com/chart/interactive/docs/gallery/bubblechart"
+            target="_blank">
+            Bubble Docs
+          </a>
+        </div>
+      </div>
+    </div>
+
+    </div>
+
+
+    <!-- LINE CHART — sozinho, ocupando toda a largura -->
+    <div class="col-12 mt-4">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h5>Line Chart</h5>
+        </div>
+        <div class="chart-wrapper">
+          <div id="chart_div3" class="chart-container-xl" style="height:600px;"></div>
+        </div>
+        <div class="card-body text-center">
+          <a class="link-doc" href="https://developers.google.com/chart/interactive/docs/gallery/linechart"
+            target="_blank">
+            Line Docs
+          </a>
+        </div>
+      </div>
+    </div>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.3.0/mdb.min.js"></script>
+</body>
+
+</html>
